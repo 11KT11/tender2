@@ -130,8 +130,10 @@ async def get_results():
 
 @app.get("/health")
 async def health():
-     return {"status": "ok", "model": MODEL}
-    @app.get("/debug_bzp")
+    return {"status": "ok", "model": MODEL}
+
+
+@app.get("/debug_bzp")
 async def debug_bzp():
     """Debug — pokazuje surową odpowiedź z BZP."""
     import httpx
@@ -153,4 +155,3 @@ async def debug_bzp():
         except Exception as e:
             results[name] = {"error": str(e)}
     return results
-   
