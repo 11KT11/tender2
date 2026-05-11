@@ -106,6 +106,28 @@ async def score_only(extracted: ExtractedTender):
     return stage_2_score(extracted)
 
 
+@app.post("/scan")
+async def trigger_scan(days_back: int = 1, min_score: int = 20):
+    """Ręcznie odpala skan BZP — filtruje CPV, analizuje, zwraca wyniki."""
+    from scraper import run_scan
+    results = run_scan(days_back=days_back, min_score=min_score)
+    return {"found": len(results), "results": results}
+
+
+@app.get("/results")
+async def get_results():
+    """Zwraca wyniki ostatniego skanu."""
+    from pathlib import Path
+    results_dir = Path("results")
+    if not results_dir.exists():
+        return {"results": []}
+    files = sorted(results_dir.glob("scan_*.json"), reverse=True)
+    if not files:
+        return {"results": []}
+    with open(files[0], "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
 @app.get("/health")
 async def health():
     return {"status": "ok", "model": MODEL}
