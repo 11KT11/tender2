@@ -135,22 +135,34 @@ async def health():
 
 @app.get("/debug_bzp")
 async def debug_bzp():
-    """Debug — pokazuje surową odpowiedź z BZP."""
+    """Debug v2 — tests multiple BZP API variants."""
     import httpx
     urls_to_try = [
-        ("searchbzp GET", "https://searchbzp.uzp.gov.pl/Search/Results?SearchPhrase=elektronika&Page=1"),
-        ("mo-board GET search", "https://ezamowienia.gov.pl/mo-board/api/v1/Board/Search?DateFrom=2026-05-01"),
-        ("mo-board GET notices", "https://ezamowienia.gov.pl/mo-client-board/api/notices/search?phrase=elektronika"),
+        ("mo-board search default", "https://ezamowienia.gov.pl/mo-board/api/v1/Board/Search"),
+        ("mo-board search with date", "https://ezamowienia.gov.pl/mo-board/api/v1/Board/Search?DateFrom=2026-05-01&DateTo=2026-05-12"),
+        ("mo-board search page2", "https://ezamowienia.gov.pl/mo-board/api/v1/Board/Search?page=1&size=50"),
+        ("mo-board search cpv", "https://ezamowienia.gov.pl/mo-board/api/v1/Board/Search?CpvCode=31700000"),
+        ("mo-board search phrase", "https://ezamowienia.gov.pl/mo-board/api/v1/Board/Search?SearchPhrase=elektronika"),
+        ("searchbzp html", "https://searchbzp.uzp.gov.pl/Search/Results?SearchPhrase=elektronika&Page=1&DateFrom=2026-05-01&DateTo=2026-05-12"),
     ]
     results = {}
     for name, url in urls_to_try:
         try:
             with httpx.Client(timeout=15, follow_redirects=True) as c:
                 r = c.get(url)
+                body = r.text[:2000]
+                # Count results if JSON array
+                count = None
+                if body.strip().startswith("["):
+                    try:
+                        count = len(r.json())
+                    except Exception:
+                        pass
                 results[name] = {
                     "status": r.status_code,
                     "url": str(r.url),
-                    "body_preview": r.text[:1000],
+                    "result_count": count,
+                    "body_preview": body,
                 }
         except Exception as e:
             results[name] = {"error": str(e)}
